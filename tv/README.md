@@ -1,5 +1,5 @@
 <div align="center">
-    <h1>天光云影<sup>TV</sup></h1>
+    <h1>小骏TV</h1>
 <div align="center">
 
 
@@ -11,10 +11,6 @@
 </div>
     <p>使用Android原生开发的电视直播软件</p>
 
-<img src="./screenshots/Screenshot_dashboard.png" width="96%"/>
-<br/>
-<img src="./screenshots/Screenshot_channels.png" width="48%"/>
-<img src="./screenshots/Screenshot_search.png" width="48%"/>
 </div>
 
 ## 使用
