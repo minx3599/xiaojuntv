@@ -24,6 +24,10 @@
 -keep class com.aliyun.rts.network.** { *; }
 -keep class com.wangsu.httpclient.** { *; }
 -keep class org.mozilla.javascript.** { *; }
+-keep class is.xyz.mpv.** { *; }
+-keep class top.yogiczy.mytv.tv.ui.screensold.videoplayer.player.MpvVideoPlayer { *; }
+-keep class org.videolan.libvlc.** { *; }
+-keep class androidx.media3.decoder.ffmpeg.** { *; }
 
 -dontwarn java.awt.**
 -dontwarn java.beans.**

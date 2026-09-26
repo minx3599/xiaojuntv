@@ -48,6 +48,7 @@ fun EpgScreen(
     val epg = epgProvider()
     val programDayGroup = epg.programmeList.groupBy { dateFormat.format(it.startAt) }
     var currentDay by remember { mutableStateOf(dateFormat.format(System.currentTimeMillis())) }
+    val hasCurrentDay = programDayGroup.containsKey(currentDay)
 
     Drawer(
         modifier = modifier
@@ -57,7 +58,11 @@ fun EpgScreen(
         position = DrawerPosition.Start,
         header = { Text("节目单") },
     ) {
-        Row(
+        if (programDayGroup.isEmpty()) {
+            Text("暂无节目单数据，请检查节目单地址或网络连接")
+        } else if (!hasCurrentDay) {
+            Text("节目单数据已过期，等待源端更新")
+        } else Row(
             horizontalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             EpgProgrammeItemList(

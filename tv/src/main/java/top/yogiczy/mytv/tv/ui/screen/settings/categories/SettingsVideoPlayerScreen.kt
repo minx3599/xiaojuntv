@@ -21,6 +21,7 @@ fun SettingsVideoPlayerScreen(
     modifier: Modifier = Modifier,
     settingsViewModel: SettingsViewModel = settingsVM,
     toVideoPlayerCoreScreen: () -> Unit = {},
+    toMpvDecoderModeScreen: () -> Unit = {},
     toVideoPlayerRenderModeScreen: () -> Unit = {},
     toVideoPlayerDisplayModeScreen: () -> Unit = {},
     toVideoPlayerLoadTimeoutScreen: () -> Unit = {},
@@ -41,6 +42,25 @@ fun SettingsVideoPlayerScreen(
             )
         }
 
+        if (settingsViewModel.videoPlayerCore == top.yogiczy.mytv.tv.ui.utils.Configs.VideoPlayerCore.MPV) {
+            item {
+                SettingsListItem(
+                    headlineContent = "MPV 解码模式",
+                    supportingContent = when (settingsViewModel.mpvDecoderMode) {
+                        top.yogiczy.mytv.tv.ui.utils.Configs.MpvDecoderMode.SOFTWARE ->
+                            "使用 CPU 解码视频"
+                        top.yogiczy.mytv.tv.ui.utils.Configs.MpvDecoderMode.HARDWARE_COPY ->
+                            "硬件解码并兼容老电视显示驱动"
+                        top.yogiczy.mytv.tv.ui.utils.Configs.MpvDecoderMode.HARDWARE ->
+                            "直接使用电视 MediaCodec"
+                    },
+                    trailingContent = settingsViewModel.mpvDecoderMode.label,
+                    onSelect = toMpvDecoderModeScreen,
+                    link = true,
+                )
+            }
+        }
+
         item {
             SettingsListItem(
                 headlineContent = "渲染方式",
@@ -50,17 +70,19 @@ fun SettingsVideoPlayerScreen(
             )
         }
 
-        item {
-            SettingsListItem(
-                headlineContent = "强制音频软解",
-                trailingContent = {
-                    Switch(settingsViewModel.videoPlayerForceAudioSoftDecode, null)
-                },
-                onSelect = {
-                    settingsViewModel.videoPlayerForceAudioSoftDecode =
-                        !settingsViewModel.videoPlayerForceAudioSoftDecode
-                },
-            )
+        if (settingsViewModel.videoPlayerCore == top.yogiczy.mytv.tv.ui.utils.Configs.VideoPlayerCore.MEDIA3) {
+            item {
+                SettingsListItem(
+                    headlineContent = "强制 FFmpeg 音频软解",
+                    trailingContent = {
+                        Switch(settingsViewModel.videoPlayerForceAudioSoftDecode, null)
+                    },
+                    onSelect = {
+                        settingsViewModel.videoPlayerForceAudioSoftDecode =
+                            !settingsViewModel.videoPlayerForceAudioSoftDecode
+                    },
+                )
+            }
         }
 
         item {

@@ -7,6 +7,7 @@ import androidx.compose.animation.core.animateIntAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -45,8 +46,6 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
-import androidx.tv.material3.Button
-import androidx.tv.material3.ButtonDefaults
 import androidx.tv.material3.Icon
 import androidx.tv.material3.LocalContentColor
 import androidx.tv.material3.LocalTextStyle
@@ -192,6 +191,11 @@ fun AppScaffoldHeaderBtn(
             .onFocusChanged { isFocused = it.hasFocus || it.isFocused }
             .focusable()
             .background(containerColor, CircleShape)
+            .border(
+                width = if (isFocused) 2.dp else 0.dp,
+                color = if (isFocused) colorScheme.surface else Color.Transparent,
+                shape = CircleShape,
+            )
             .padding(horizontal = 16.dp, vertical = 10.dp),
     ) {
         Row(

@@ -2,6 +2,7 @@ package top.yogiczy.mytv.tv.ui.screensold.videoplayer
 
 import android.view.SurfaceView
 import android.view.TextureView
+import android.util.Log
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.Stable
@@ -19,7 +20,9 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import top.yogiczy.mytv.core.data.entities.channel.ChannelLine
 import top.yogiczy.mytv.tv.ui.screen.settings.settingsVM
 import top.yogiczy.mytv.tv.ui.screensold.videoplayer.player.IjkVideoPlayer
+import top.yogiczy.mytv.tv.ui.screensold.videoplayer.player.LibVlcVideoPlayer
 import top.yogiczy.mytv.tv.ui.screensold.videoplayer.player.Media3VideoPlayer
+import top.yogiczy.mytv.tv.ui.screensold.videoplayer.player.MpvVideoPlayer
 import top.yogiczy.mytv.tv.ui.screensold.videoplayer.player.VideoPlayer
 import top.yogiczy.mytv.tv.ui.utils.Configs
 
@@ -27,7 +30,23 @@ import top.yogiczy.mytv.tv.ui.utils.Configs
 class VideoPlayerState(
     val instance: VideoPlayer,
     private var defaultDisplayModeProvider: () -> VideoPlayerDisplayMode = { VideoPlayerDisplayMode.ORIGINAL },
+    private val onMpvLoadTimeout: () -> Unit = {},
+    private val onMpvFailure: () -> Unit = {},
 ) {
+    enum class PlaybackStatus {
+        IDLE,
+        LOADING,
+        BUFFERING,
+        PLAYING,
+        ERROR,
+    }
+
+    data class PlaybackError(
+        val code: String,
+        val raw: String,
+        val retryable: Boolean = true,
+    )
+
     /** 显示模式 */
     var displayMode by mutableStateOf(defaultDisplayModeProvider())
 
@@ -36,6 +55,14 @@ class VideoPlayerState(
 
     /** 错误 */
     var error by mutableStateOf<String?>(null)
+
+    /** 播放业务状态，供上层 UI 显示稳定状态。 */
+    var playbackStatus by mutableStateOf(PlaybackStatus.IDLE)
+        private set
+
+    /** 最近一次播放错误，供 UI 决定是否显示确认重试。 */
+    var playbackError by mutableStateOf<PlaybackError?>(null)
+        private set
 
     /** 正在缓冲 */
     var isBuffering by mutableStateOf(false)
@@ -61,10 +88,50 @@ class VideoPlayerState(
     /** 元数据 */
     var metadata by mutableStateOf(VideoPlayer.Metadata())
 
+    private var lastPreparedLine: ChannelLine? = null
+
+    val activeLine: ChannelLine?
+        get() = lastPreparedLine
+
     fun prepare(line: ChannelLine) {
+        instance.stop()
+        lastPreparedLine = line
         error = null
+        playbackError = null
+        playbackStatus = PlaybackStatus.LOADING
+        aspectRatio = 16f / 9f
+        isBuffering = false
+        isPlaying = false
+        duration = 0L
+        currentPosition = 0L
         metadata = VideoPlayer.Metadata()
         instance.prepare(line)
+    }
+
+    /** 用户确认重试当前线路，不自动递归重试。 */
+    fun retry(): Boolean {
+        val line = lastPreparedLine ?: return false
+        prepare(line)
+        return true
+    }
+
+    fun setError(code: String, retryable: Boolean = true) {
+        error = code
+        playbackError = PlaybackError(
+            code = code.substringBefore("("),
+            raw = code,
+            retryable = retryable,
+        )
+        playbackStatus = PlaybackStatus.ERROR
+        isPlaying = false
+        if (isBuffering) {
+            isBuffering = false
+            onIsBufferingListeners.forEach { it(false) }
+        }
+    }
+
+    fun fail(exception: VideoPlayer.PlaybackException, retryable: Boolean = true) {
+        setError("${exception.errorCodeName}(${exception.errorCode})", retryable)
     }
 
     fun play() {
@@ -81,6 +148,9 @@ class VideoPlayerState(
 
     fun stop() {
         instance.stop()
+        playbackStatus = PlaybackStatus.IDLE
+        isBuffering = false
+        aspectRatio = 16f / 9f
     }
 
     fun selectVideoTrack(track: VideoPlayer.Metadata.Video?) {
@@ -107,6 +177,7 @@ class VideoPlayerState(
     private val onErrorListeners = mutableListOf<() -> Unit>()
     private val onInterruptListeners = mutableListOf<() -> Unit>()
     private val onIsBufferingListeners = mutableListOf<(Boolean) -> Unit>()
+    private val onRecoveryListeners = mutableListOf<() -> Unit>()
 
     fun onReady(listener: () -> Unit) {
         onReadyListeners.add(listener)
@@ -124,24 +195,55 @@ class VideoPlayerState(
         onIsBufferingListeners.add(listener)
     }
 
+    fun onRecovery(listener: () -> Unit) {
+        onRecoveryListeners.add(listener)
+    }
+
     fun initialize() {
-        instance.initialize()
         instance.onResolution { width, height ->
             if (width > 0 && height > 0) aspectRatio = width.toFloat() / height
         }
         instance.onError { ex ->
-            error = ex?.let { "${it.errorCodeName}(${it.errorCode})" }
-                ?.apply { onErrorListeners.forEach { it.invoke() } }
+            val errorText = ex?.let { "${it.errorCodeName}(${it.errorCode})" }
+            if (
+                ex != null &&
+                instance is MpvVideoPlayer &&
+                ex.errorCodeName.startsWith("MPV_")
+            ) {
+                Log.e("VideoPlayerState", "MPV failure, fallback to IJK: $errorText")
+                onMpvFailure()
+            }
+            if (
+                ex == VideoPlayer.PlaybackException.LOAD_TIMEOUT &&
+                instance is MpvVideoPlayer
+            ) {
+                Log.w("VideoPlayerState", "MPV load timeout, fallback to IJK")
+                onMpvLoadTimeout()
+            }
+            if (ex != null) {
+                setError(errorText ?: "ERROR_UNKNOWN")
+                onErrorListeners.forEach { it.invoke() }
+            }
 
         }
         instance.onReady {
+            val wasError = playbackStatus == PlaybackStatus.ERROR
             onReadyListeners.forEach { it.invoke() }
             error = null
+            playbackError = null
+            playbackStatus = PlaybackStatus.PLAYING
             displayMode = defaultDisplayModeProvider()
+            if (wasError) onRecoveryListeners.forEach { it.invoke() }
         }
         instance.onBuffering {
             isBuffering = it
-            if (it) error = null
+            if (it) {
+                error = null
+                playbackError = null
+                playbackStatus = PlaybackStatus.BUFFERING
+            } else if (playbackStatus != PlaybackStatus.ERROR) {
+                playbackStatus = PlaybackStatus.LOADING
+            }
             onIsBufferingListeners.forEach { cb -> cb(isBuffering) }
         }
         instance.onPrepared { }
@@ -150,6 +252,7 @@ class VideoPlayerState(
         instance.onCurrentPositionChanged { currentPosition = it }
         instance.onMetadata { metadata = it }
         instance.onInterrupt { onInterruptListeners.forEach { it.invoke() } }
+        instance.initialize()
     }
 
     fun release() {
@@ -157,6 +260,7 @@ class VideoPlayerState(
         onErrorListeners.clear()
         onInterruptListeners.clear()
         onIsBufferingListeners.clear()
+        onRecoveryListeners.clear()
         instance.release()
     }
 }
@@ -164,27 +268,46 @@ class VideoPlayerState(
 @Composable
 fun rememberVideoPlayerState(
     defaultDisplayModeProvider: () -> VideoPlayerDisplayMode = { VideoPlayerDisplayMode.ORIGINAL },
+    videoPlayerCoreOverride: Configs.VideoPlayerCore? = null,
 ): VideoPlayerState {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val coroutineScope = rememberCoroutineScope()
+    val settingsViewModel = settingsVM
 
-    val videoPlayerCore = settingsVM.videoPlayerCore
-    val state = remember(videoPlayerCore) {
+    val videoPlayerCore = videoPlayerCoreOverride ?: settingsViewModel.videoPlayerCore
+    val mpvDecoderMode = settingsViewModel.mpvDecoderMode
+    val forceAudioSoftDecode = settingsViewModel.videoPlayerForceAudioSoftDecode
+    val state = remember(videoPlayerCore, mpvDecoderMode, forceAudioSoftDecode) {
         val player = when (videoPlayerCore) {
+            Configs.VideoPlayerCore.MPV -> MpvVideoPlayer(context, coroutineScope, mpvDecoderMode)
             Configs.VideoPlayerCore.MEDIA3 -> Media3VideoPlayer(context, coroutineScope)
             Configs.VideoPlayerCore.IJK -> IjkVideoPlayer(context, coroutineScope)
+            Configs.VideoPlayerCore.VLC -> LibVlcVideoPlayer(context, coroutineScope)
         }
 
-        VideoPlayerState(player, defaultDisplayModeProvider)
+        VideoPlayerState(
+            player,
+            defaultDisplayModeProvider,
+            onMpvLoadTimeout = {
+                if (settingsViewModel.videoPlayerCore == Configs.VideoPlayerCore.MPV) {
+                    settingsViewModel.videoPlayerCore = Configs.VideoPlayerCore.IJK
+                }
+            },
+            onMpvFailure = {
+                if (settingsViewModel.videoPlayerCore == Configs.VideoPlayerCore.MPV) {
+                    settingsViewModel.videoPlayerCore = Configs.VideoPlayerCore.IJK
+                }
+            },
+        )
     }
 
-    DisposableEffect(videoPlayerCore) {
+    DisposableEffect(videoPlayerCore, mpvDecoderMode, forceAudioSoftDecode) {
         state.initialize()
         onDispose { state.release() }
     }
 
-    DisposableEffect(lifecycleOwner, videoPlayerCore) {
+    DisposableEffect(lifecycleOwner, videoPlayerCore, mpvDecoderMode, forceAudioSoftDecode) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) state.play()
             else if (event == Lifecycle.Event.ON_STOP) {

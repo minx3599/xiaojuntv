@@ -2,7 +2,12 @@ package top.yogiczy.mytv.tv.ui.screensold.main.components
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import kotlinx.coroutines.launch
 import top.yogiczy.mytv.core.data.entities.channel.Channel
@@ -61,6 +66,7 @@ fun MainContent(
     onBackPressed: () -> Unit = {},
 ) {
     val coroutineScope = rememberCoroutineScope()
+    var isExitConfirmationVisible by remember { mutableStateOf(false) }
 
     val videoPlayerState =
         rememberVideoPlayerState(defaultDisplayModeProvider = { settingsViewModel.videoPlayerDisplayMode })
@@ -69,6 +75,11 @@ fun MainContent(
         channelGroupListProvider = filteredChannelGroupListProvider,
         favoriteChannelListProvider = favoriteChannelListProvider,
     )
+
+    // 等播放器完成初始化后再恢复频道，避免切换内核时新实例在监听器注册前开始播放。
+    LaunchedEffect(videoPlayerState, mainContentState) {
+        mainContentState.restoreCurrentChannel()
+    }
     val channelNumberSelectState = rememberChannelNumberSelectState {
         val idx = it.toInt() - 1
         filteredChannelGroupListProvider().channelList.getOrNull(idx)?.let { channel ->
@@ -79,7 +90,12 @@ fun MainContent(
     Box(
         modifier = modifier
             .popupable()
-            .backHandler { onBackPressed() }
+            .backHandler(
+                condition = {
+                    !mainContentState.isAnyPopupVisible && !isExitConfirmationVisible
+                },
+                onBackPressed = { isExitConfirmationVisible = true },
+            )
             .handleKeyEvents(
                 onUp = {
                     if (settingsViewModel.iptvChannelChangeFlip) mainContentState.changeCurrentChannelToNext()
@@ -105,7 +121,9 @@ fun MainContent(
                         )
                     }
                 },
-                onSelect = { mainContentState.isChannelScreenVisible = true },
+                onSelect = {
+                    mainContentState.isChannelScreenVisible = true
+                },
                 onLongSelect = { mainContentState.isQuickOpScreenVisible = true },
                 onSettings = { mainContentState.isQuickOpScreenVisible = true },
                 onLongLeft = { mainContentState.isEpgScreenVisible = true },
@@ -143,6 +161,8 @@ fun MainContent(
         VideoPlayerScreen(
             state = videoPlayerState,
             showMetadataProvider = { settingsViewModel.debugShowVideoPlayerMetadata },
+            onRetry = { videoPlayerState.retry() },
+            onBackToChannels = { mainContentState.isChannelScreenVisible = true },
         )
 
         Visibility({ mainContentState.currentChannelLine.url.startsWith("webview://") }) {
@@ -439,7 +459,9 @@ fun MainContent(
             onChannelFavoriteListVisibleChange = {
                 settingsViewModel.iptvChannelFavoriteListVisible = it
             },
-            onClose = { mainContentState.isChannelScreenVisible = false },
+            onClose = {
+                mainContentState.isChannelScreenVisible = false
+            },
         )
     }
 
@@ -478,9 +500,21 @@ fun MainContent(
             onChannelFavoriteListVisibleChange = {
                 settingsViewModel.iptvChannelFavoriteListVisible = it
             },
-            onClose = { mainContentState.isChannelScreenVisible = false },
+            onClose = {
+                mainContentState.isChannelScreenVisible = false
+            },
         )
     }
+
+    ExitConfirmationDialog(
+        visibleProvider = { isExitConfirmationVisible },
+        onDismissRequest = { isExitConfirmationVisible = false },
+        onConfirmExit = onBackPressed,
+        onOpenSettings = {
+            isExitConfirmationVisible = false
+            toSettingsScreen(null)
+        },
+    )
 
     EpgReverseScreen(
         epgProgrammeReserveListProvider = { settingsViewModel.epgChannelReserveList },

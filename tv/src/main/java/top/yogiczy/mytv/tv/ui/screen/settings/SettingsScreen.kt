@@ -11,7 +11,6 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import top.yogiczy.mytv.core.data.entities.channel.Channel
 import top.yogiczy.mytv.core.data.entities.channel.ChannelGroupList
@@ -22,30 +21,26 @@ import top.yogiczy.mytv.core.data.repositories.iptv.IptvRepository
 import top.yogiczy.mytv.tv.ui.material.Snackbar
 import top.yogiczy.mytv.tv.ui.screen.components.AppScreen
 import top.yogiczy.mytv.tv.ui.screen.settings.categories.SettingsAppScreen
-import top.yogiczy.mytv.tv.ui.screen.settings.categories.SettingsCloudSyncScreen
 import top.yogiczy.mytv.tv.ui.screen.settings.categories.SettingsControlScreen
 import top.yogiczy.mytv.tv.ui.screen.settings.categories.SettingsDebugScreen
 import top.yogiczy.mytv.tv.ui.screen.settings.categories.SettingsEpgScreen
 import top.yogiczy.mytv.tv.ui.screen.settings.categories.SettingsIptvScreen
 import top.yogiczy.mytv.tv.ui.screen.settings.categories.SettingsLogScreen
 import top.yogiczy.mytv.tv.ui.screen.settings.categories.SettingsNetworkScreen
-import top.yogiczy.mytv.tv.ui.screen.settings.categories.SettingsPermissionsScreen
 import top.yogiczy.mytv.tv.ui.screen.settings.categories.SettingsThemeScreen
 import top.yogiczy.mytv.tv.ui.screen.settings.categories.SettingsUiScreen
-import top.yogiczy.mytv.tv.ui.screen.settings.categories.SettingsUpdateScreen
 import top.yogiczy.mytv.tv.ui.screen.settings.categories.SettingsVideoPlayerScreen
 import top.yogiczy.mytv.tv.ui.screen.settings.subcategories.SettingsChannelGroupVisibilityScreen
-import top.yogiczy.mytv.tv.ui.screen.settings.subcategories.SettingsCloudSyncProviderScreen
 import top.yogiczy.mytv.tv.ui.screen.settings.subcategories.SettingsEpgRefreshTimeThresholdScreen
 import top.yogiczy.mytv.tv.ui.screen.settings.subcategories.SettingsEpgSourceScreen
 import top.yogiczy.mytv.tv.ui.screen.settings.subcategories.SettingsIptvHybridModeScreen
 import top.yogiczy.mytv.tv.ui.screen.settings.subcategories.SettingsIptvSourceCacheTimeScreen
 import top.yogiczy.mytv.tv.ui.screen.settings.subcategories.SettingsIptvSourceScreen
+import top.yogiczy.mytv.tv.ui.screen.settings.subcategories.SettingsMpvDecoderModeScreen
 import top.yogiczy.mytv.tv.ui.screen.settings.subcategories.SettingsUiDensityScaleRatioScreen
 import top.yogiczy.mytv.tv.ui.screen.settings.subcategories.SettingsUiFontScaleRatioScreen
 import top.yogiczy.mytv.tv.ui.screen.settings.subcategories.SettingsUiScreenAutoCloseScreen
 import top.yogiczy.mytv.tv.ui.screen.settings.subcategories.SettingsUiTimeShowModeScreen
-import top.yogiczy.mytv.tv.ui.screen.settings.subcategories.SettingsUpdateChannelScreen
 import top.yogiczy.mytv.tv.ui.screen.settings.subcategories.SettingsVideoPlayerCoreScreen
 import top.yogiczy.mytv.tv.ui.screen.settings.subcategories.SettingsVideoPlayerDisplayModeScreen
 import top.yogiczy.mytv.tv.ui.screen.settings.subcategories.SettingsVideoPlayerLoadTimeoutScreen
@@ -62,17 +57,13 @@ fun SettingsScreen(
     startDestinationProvider: () -> String? = { null },
     channelGroupListProvider: () -> ChannelGroupList = { ChannelGroupList() },
     settingsViewModel: SettingsViewModel = settingsVM,
-    onCheckUpdate: () -> Unit = {},
     onReload: () -> Unit = {},
     onBackPressed: () -> Unit = {},
 ) {
     val coroutineScope = rememberCoroutineScope()
 
     LaunchedEffect(Unit) {
-        while (true) {
-            settingsViewModel.refresh()
-            delay(1000)
-        }
+        settingsViewModel.refresh()
     }
 
     val navController = rememberNavController()
@@ -152,6 +143,9 @@ fun SettingsScreen(
                         toVideoPlayerCoreScreen = {
                             navController.navigateSingleTop(SettingsSubCategories.VIDEO_PLAYER_CORE.name)
                         },
+                        toMpvDecoderModeScreen = {
+                            navController.navigateSingleTop(SettingsSubCategories.MPV_DECODER_MODE.name)
+                        },
                         toVideoPlayerRenderModeScreen = {
                             navController.navigateSingleTop(SettingsSubCategories.VIDEO_PLAYER_RENDER_MODE.name)
                         },
@@ -160,15 +154,6 @@ fun SettingsScreen(
                         },
                         toVideoPlayerLoadTimeoutScreen = {
                             navController.navigateSingleTop(SettingsSubCategories.VIDEO_PLAYER_LOAD_TIMEOUT.name)
-                        },
-                        onBackPressed = { navController.navigateUp() },
-                    )
-                }
-
-                composable(SettingsCategories.UPDATE.name) {
-                    SettingsUpdateScreen(
-                        toUpdateChannelScreen = {
-                            navController.navigateSingleTop(SettingsSubCategories.UPDATE_CHANNEL.name)
                         },
                         onBackPressed = { navController.navigateUp() },
                     )
@@ -186,16 +171,6 @@ fun SettingsScreen(
                     )
                 }
 
-                composable(SettingsCategories.CLOUD_SYNC.name) {
-                    SettingsCloudSyncScreen(
-                        toCloudSyncProviderScreen = {
-                            navController.navigateSingleTop(SettingsSubCategories.CLOUD_SYNC_PROVIDER.name)
-                        },
-                        onReload = onReload,
-                        onBackPressed = { navController.navigateUp() },
-                    )
-                }
-
                 composable(SettingsCategories.DEBUG.name) {
                     SettingsDebugScreen(
                         onBackPressed = { navController.navigateUp() },
@@ -204,12 +179,6 @@ fun SettingsScreen(
 
                 composable(SettingsCategories.LOG.name) {
                     SettingsLogScreen(
-                        onBackPressed = { navController.navigateUp() },
-                    )
-                }
-
-                composable(SettingsCategories.PERMISSIONS.name) {
-                    SettingsPermissionsScreen(
                         onBackPressed = { navController.navigateUp() },
                     )
                 }
@@ -357,6 +326,17 @@ fun SettingsScreen(
                     )
                 }
 
+                composable(SettingsSubCategories.MPV_DECODER_MODE.name) {
+                    SettingsMpvDecoderModeScreen(
+                        modeProvider = { settingsViewModel.mpvDecoderMode },
+                        onModeChanged = {
+                            settingsViewModel.mpvDecoderMode = it
+                            navController.navigateUp()
+                        },
+                        onBackPressed = { navController.navigateUp() },
+                    )
+                }
+
                 composable(SettingsSubCategories.VIDEO_PLAYER_RENDER_MODE.name) {
                     SettingsVideoPlayerRenderModeScreen(
                         renderModeProvider = { settingsViewModel.videoPlayerRenderMode },
@@ -390,28 +370,6 @@ fun SettingsScreen(
                     )
                 }
 
-                composable(SettingsSubCategories.UPDATE_CHANNEL.name) {
-                    SettingsUpdateChannelScreen(
-                        updateChannelProvider = { settingsViewModel.updateChannel },
-                        onUpdateChannelChanged = {
-                            settingsViewModel.updateChannel = it
-                            navController.navigateUp()
-                            onCheckUpdate()
-                        },
-                        onBackPressed = { navController.navigateUp() },
-                    )
-                }
-
-                composable(SettingsSubCategories.CLOUD_SYNC_PROVIDER.name) {
-                    SettingsCloudSyncProviderScreen(
-                        providerProvider = { settingsViewModel.cloudSyncProvider },
-                        onProviderChanged = {
-                            settingsViewModel.cloudSyncProvider = it
-                            navController.navigateUp()
-                        },
-                        onBackPressed = { navController.navigateUp() },
-                    )
-                }
             }
         )
     }

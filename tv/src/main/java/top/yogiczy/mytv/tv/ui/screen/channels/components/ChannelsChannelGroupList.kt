@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import top.yogiczy.mytv.core.data.entities.channel.ChannelGroup
@@ -21,6 +22,7 @@ fun ChannelsChannelGroupList(
     modifier: Modifier = Modifier,
     channelGroupListProvider: () -> ChannelGroupList = { ChannelGroupList() },
     currentChannelGroupProvider: () -> ChannelGroup = { ChannelGroup() },
+    firstItemFocusRequester: FocusRequester? = null,
     onChannelGroupSelected: (ChannelGroup) -> Unit = {},
 ) {
     val channelGroupList = channelGroupListProvider()
@@ -34,6 +36,7 @@ fun ChannelsChannelGroupList(
         contentAlignment = Alignment.Center
     ) {
         LazyRow(
+            initialFocusRequester = firstItemFocusRequester,
             contentPadding = PaddingValues(start = childPadding.start, end = childPadding.end),
             horizontalArrangement = Arrangement.spacedBy(20.dp)
         ) { runtime ->

@@ -1,9 +1,11 @@
 package top.yogiczy.mytv.tv.ui.utils
 
+import android.os.Build
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import top.yogiczy.mytv.core.data.entities.channel.Channel
 import top.yogiczy.mytv.core.data.entities.channel.ChannelFavoriteList
+import top.yogiczy.mytv.core.data.entities.epg.EpgProgramme
 import top.yogiczy.mytv.core.data.entities.epg.EpgProgrammeReserveList
 import top.yogiczy.mytv.core.data.entities.epgsource.EpgSource
 import top.yogiczy.mytv.core.data.entities.epgsource.EpgSourceList
@@ -88,6 +90,18 @@ object Configs {
         /** 上一次播放频道 */
         IPTV_CHANNEL_LAST_PLAY,
 
+        /** 上一次播放频道所属分组 */
+        IPTV_CHANNEL_LAST_GROUP,
+
+        /** 上一次播放频道线路 */
+        IPTV_CHANNEL_LAST_LINE_IDX,
+
+        /** 上一次回放节目 */
+        IPTV_CHANNEL_LAST_PLAYBACK_EPG,
+
+        /** 上一次播放频道所属直播源 */
+        IPTV_CHANNEL_LAST_PLAY_SOURCE,
+
         /** 直播源线路可播放host列表 */
         IPTV_CHANNEL_LINE_PLAYABLE_HOST_LIST,
 
@@ -163,6 +177,9 @@ object Configs {
         /** ==================== 播放器 ==================== */
         /** 播放器 内核 */
         VIDEO_PLAYER_CORE,
+
+        /** MPV 解码模式 */
+        MPV_DECODER_MODE,
 
         /** 播放器 渲染方式 */
         VIDEO_PLAYER_RENDER_MODE,
@@ -248,12 +265,12 @@ object Configs {
 
     /** 协议已同意 */
     var appAgreementAgreed: Boolean
-        get() = SP.getBoolean(KEY.APP_AGREEMENT_AGREED.name, false)
+        get() = SP.getBoolean(KEY.APP_AGREEMENT_AGREED.name, true)
         set(value) = SP.putBoolean(KEY.APP_AGREEMENT_AGREED.name, value)
 
     /** 起始界面 */
     var appStartupScreen: String
-        get() = SP.getString(KEY.APP_STARTUP_SCREEN.name, Screens.Dashboard.name)
+        get() = SP.getString(KEY.APP_STARTUP_SCREEN.name, Screens.Live.name)
         set(value) = SP.putString(KEY.APP_STARTUP_SCREEN.name, value)
 
     /** ==================== 调式 ==================== */
@@ -286,9 +303,17 @@ object Configs {
 
     /** 直播源列表 */
     var iptvSourceList: IptvSourceList
-        get() = Globals.json.decodeFromString(
-            SP.getString(KEY.IPTV_SOURCE_LIST.name, Globals.json.encodeToString(IptvSourceList()))
-        )
+        get() {
+            val saved = SP.getString(KEY.IPTV_SOURCE_LIST.name, "")
+            val sources = if (saved.isBlank()) {
+                emptyList()
+            } else {
+                Globals.json.decodeFromString<IptvSourceList>(saved).value
+            }
+            val builtInKeys = Constants.IPTV_SOURCE_LIST.map { it.name to it.url }.toSet()
+            return IptvSourceList(sources.distinctBy { it.name to it.url }
+                .filterNot { (it.name to it.url) in builtInKeys })
+        }
         set(value) = SP.putString(KEY.IPTV_SOURCE_LIST.name, Globals.json.encodeToString(value))
 
     /** 直播源缓存时间（毫秒） */
@@ -359,6 +384,53 @@ object Configs {
             Globals.json.encodeToString(value)
         )
 
+    /** 上一次播放频道所属分组 */
+    var iptvChannelLastGroup: String
+        get() = SP.getString(KEY.IPTV_CHANNEL_LAST_GROUP.name, "")
+        set(value) = SP.putString(KEY.IPTV_CHANNEL_LAST_GROUP.name, value)
+
+    /** 上一次播放频道线路 */
+    var iptvChannelLastLineIdx: Int
+        get() = SP.getInt(KEY.IPTV_CHANNEL_LAST_LINE_IDX.name, 0).coerceAtLeast(0)
+        set(value) = SP.putInt(KEY.IPTV_CHANNEL_LAST_LINE_IDX.name, value.coerceAtLeast(0))
+
+    /** 上一次回放节目 */
+    var iptvChannelLastPlaybackEpgProgramme: EpgProgramme?
+        get() {
+            val saved = SP.getString(KEY.IPTV_CHANNEL_LAST_PLAYBACK_EPG.name, "")
+            return if (saved.isBlank()) {
+                null
+            } else {
+                runCatching { Globals.json.decodeFromString<EpgProgramme>(saved) }.getOrNull()
+            }
+        }
+        set(value) {
+            if (value == null) {
+                SP.putString(KEY.IPTV_CHANNEL_LAST_PLAYBACK_EPG.name, "")
+            } else {
+                SP.putString(
+                    KEY.IPTV_CHANNEL_LAST_PLAYBACK_EPG.name,
+                    Globals.json.encodeToString(value),
+                )
+            }
+        }
+
+    /** 上一次播放频道所属直播源 */
+    var iptvChannelLastPlaySource: IptvSource
+        get() {
+            val saved = SP.getString(KEY.IPTV_CHANNEL_LAST_PLAY_SOURCE.name, "")
+            return if (saved.isBlank()) {
+                IptvSource()
+            } else {
+                runCatching { Globals.json.decodeFromString<IptvSource>(saved) }
+                    .getOrDefault(IptvSource())
+            }
+        }
+        set(value) = SP.putString(
+            KEY.IPTV_CHANNEL_LAST_PLAY_SOURCE.name,
+            Globals.json.encodeToString(value),
+        )
+
     /** 直播源线路可播放host列表 */
     var iptvChannelLinePlayableHostList: Set<String>
         get() = SP.getStringSet(KEY.IPTV_CHANNEL_LINE_PLAYABLE_HOST_LIST.name, emptySet())
@@ -394,13 +466,17 @@ object Configs {
     /** 当前节目单来源 */
     var epgSourceCurrent: EpgSource
         get() = Globals.json.decodeFromString(SP.getString(KEY.EPG_SOURCE_CURRENT.name, "")
-            .ifBlank { Globals.json.encodeToString(Constants.EPG_SOURCE_LIST.first()) })
+            .ifBlank {
+                Globals.json.encodeToString(
+                    Constants.EPG_SOURCE_LIST.firstOrNull() ?: EpgSource()
+                )
+            })
         set(value) = SP.putString(KEY.EPG_SOURCE_CURRENT.name, Globals.json.encodeToString(value))
 
     /** 节目单来源列表 */
     var epgSourceList: EpgSourceList
         get() = Globals.json.decodeFromString(
-            SP.getString(KEY.EPG_SOURCE_LIST.name, Globals.json.encodeToString(EpgSourceList()))
+            SP.getString(KEY.EPG_SOURCE_LIST.name, Globals.json.encodeToString(Constants.EPG_SOURCE_LIST))
         )
         set(value) = SP.putString(KEY.EPG_SOURCE_LIST.name, Globals.json.encodeToString(value))
 
@@ -411,7 +487,7 @@ object Configs {
 
     /** 节目单跟随直播源 */
     var epgSourceFollowIptv: Boolean
-        get() = SP.getBoolean(KEY.EPG_SOURCE_FOLLOW_IPTV.name, false)
+        get() = SP.getBoolean(KEY.EPG_SOURCE_FOLLOW_IPTV.name, true)
         set(value) = SP.putBoolean(KEY.EPG_SOURCE_FOLLOW_IPTV.name, value)
 
     /** 节目预约列表 */
@@ -430,7 +506,7 @@ object Configs {
     /** ==================== 界面 ==================== */
     /** 显示节目进度 */
     var uiShowEpgProgrammeProgress: Boolean
-        get() = SP.getBoolean(KEY.UI_SHOW_EPG_PROGRAMME_PROGRESS.name, true)
+        get() = SP.getBoolean(KEY.UI_SHOW_EPG_PROGRAMME_PROGRESS.name, false)
         set(value) = SP.putBoolean(KEY.UI_SHOW_EPG_PROGRAMME_PROGRESS.name, value)
 
     /** 显示常驻节目进度 */
@@ -450,7 +526,7 @@ object Configs {
 
     /** 使用经典选台界面 */
     var uiUseClassicPanelScreen: Boolean
-        get() = SP.getBoolean(KEY.UI_USE_CLASSIC_PANEL_SCREEN.name, false)
+        get() = SP.getBoolean(KEY.UI_USE_CLASSIC_PANEL_SCREEN.name, true)
         set(value) = SP.putBoolean(KEY.UI_USE_CLASSIC_PANEL_SCREEN.name, value)
 
     /** 界面密度缩放比例 */
@@ -495,10 +571,38 @@ object Configs {
     /** ==================== 播放器 ==================== */
     /** 播放器 内核 */
     var videoPlayerCore: VideoPlayerCore
-        get() = VideoPlayerCore.fromValue(
-            SP.getInt(KEY.VIDEO_PLAYER_CORE.name, VideoPlayerCore.MEDIA3.value)
-        )
+        get() {
+            val configured = VideoPlayerCore.fromValue(
+                SP.getInt(KEY.VIDEO_PLAYER_CORE.name, defaultVideoPlayerCore.value)
+            )
+            return if (configured == VideoPlayerCore.VLC && Build.SUPPORTED_64_BIT_ABIS.isEmpty()) {
+                VideoPlayerCore.IJK
+            } else {
+                configured
+            }
+        }
         set(value) = SP.putInt(KEY.VIDEO_PLAYER_CORE.name, value.value)
+
+    private val defaultVideoPlayerCore: VideoPlayerCore
+        get() = if (Build.SUPPORTED_64_BIT_ABIS.isNotEmpty()) {
+            VideoPlayerCore.MPV
+        } else {
+            VideoPlayerCore.VLC
+        }
+
+    /** MPV 解码模式 */
+    var mpvDecoderMode: MpvDecoderMode
+        get() = MpvDecoderMode.fromValue(
+            SP.getInt(KEY.MPV_DECODER_MODE.name, defaultMpvDecoderMode.value)
+        )
+        set(value) = SP.putInt(KEY.MPV_DECODER_MODE.name, value.value)
+
+    private val defaultMpvDecoderMode: MpvDecoderMode
+        get() = if (Build.SUPPORTED_64_BIT_ABIS.isNotEmpty()) {
+            MpvDecoderMode.HARDWARE
+        } else {
+            MpvDecoderMode.HARDWARE_COPY
+        }
 
     /** 播放器 渲染方式 */
     var videoPlayerRenderMode: VideoPlayerRenderMode
@@ -527,7 +631,7 @@ object Configs {
     /** 播放器 显示模式 */
     var videoPlayerDisplayMode: VideoPlayerDisplayMode
         get() = VideoPlayerDisplayMode.fromValue(
-            SP.getInt(KEY.VIDEO_PLAYER_DISPLAY_MODE.name, VideoPlayerDisplayMode.ORIGINAL.value)
+            SP.getInt(KEY.VIDEO_PLAYER_DISPLAY_MODE.name, VideoPlayerDisplayMode.FILL.value)
         )
         set(value) = SP.putInt(KEY.VIDEO_PLAYER_DISPLAY_MODE.name, value.value)
 
@@ -658,15 +762,38 @@ object Configs {
     }
 
     enum class VideoPlayerCore(val value: Int, val label: String) {
+        /** MPV */
+        MPV(2, "MPV"),
+
         /** Media3 */
         MEDIA3(0, "Media3"),
 
         /** IJK */
-        IJK(1, "IjkPlayer");
+        IJK(1, "IjkPlayer"),
+
+        /** LibVLC */
+        VLC(3, "VLC");
 
         companion object {
             fun fromValue(value: Int): VideoPlayerCore {
-                return entries.firstOrNull { it.value == value } ?: MEDIA3
+                return entries.firstOrNull { it.value == value } ?: MPV
+            }
+        }
+    }
+
+    enum class MpvDecoderMode(val value: Int, val label: String, val hwdec: String) {
+        /** 软件解码，兼容模拟器和大多数设备 */
+        SOFTWARE(0, "软件解码", "no"),
+
+        /** Android MediaCodec 硬件解码 */
+        HARDWARE(1, "硬件解码", "mediacodec"),
+
+        /** MediaCodec 解码后复制到 MPV 渲染，兼容部分老电视的 Surface 驱动 */
+        HARDWARE_COPY(2, "兼容硬解", "mediacodec-copy");
+
+        companion object {
+            fun fromValue(value: Int): MpvDecoderMode {
+                return entries.firstOrNull { it.value == value } ?: SOFTWARE
             }
         }
     }
@@ -708,6 +835,10 @@ object Configs {
             iptvChannelFavoriteListVisible = iptvChannelFavoriteListVisible,
             iptvChannelFavoriteList = iptvChannelFavoriteList,
             iptvChannelLastPlay = iptvChannelLastPlay,
+            iptvChannelLastGroup = iptvChannelLastGroup,
+            iptvChannelLastLineIdx = iptvChannelLastLineIdx,
+            iptvChannelLastPlaybackEpgProgramme = iptvChannelLastPlaybackEpgProgramme,
+            iptvChannelLastPlaySource = iptvChannelLastPlaySource,
             iptvChannelLinePlayableHostList = iptvChannelLinePlayableHostList,
             iptvChannelLinePlayableUrlList = iptvChannelLinePlayableUrlList,
             iptvChannelChangeFlip = iptvChannelChangeFlip,
@@ -732,6 +863,7 @@ object Configs {
             updateForceRemind = updateForceRemind,
             updateChannel = updateChannel,
             videoPlayerCore = videoPlayerCore,
+            mpvDecoderMode = mpvDecoderMode,
             videoPlayerRenderMode = videoPlayerRenderMode,
             videoPlayerUserAgent = videoPlayerUserAgent,
             videoPlayerHeaders = videoPlayerHeaders,
@@ -778,6 +910,12 @@ object Configs {
         configs.iptvChannelFavoriteListVisible?.let { iptvChannelFavoriteListVisible = it }
         configs.iptvChannelFavoriteList?.let { iptvChannelFavoriteList = it }
         configs.iptvChannelLastPlay?.let { iptvChannelLastPlay = it }
+        configs.iptvChannelLastGroup?.let { iptvChannelLastGroup = it }
+        configs.iptvChannelLastLineIdx?.let { iptvChannelLastLineIdx = it }
+        configs.iptvChannelLastPlaybackEpgProgramme?.let {
+            iptvChannelLastPlaybackEpgProgramme = it
+        }
+        configs.iptvChannelLastPlaySource?.let { iptvChannelLastPlaySource = it }
         configs.iptvChannelLinePlayableHostList?.let { iptvChannelLinePlayableHostList = it }
         configs.iptvChannelLinePlayableUrlList?.let { iptvChannelLinePlayableUrlList = it }
         configs.iptvChannelChangeFlip?.let { iptvChannelChangeFlip = it }
@@ -804,6 +942,7 @@ object Configs {
         configs.updateForceRemind?.let { updateForceRemind = it }
         configs.updateChannel?.let { updateChannel = it }
         configs.videoPlayerCore?.let { videoPlayerCore = it }
+        configs.mpvDecoderMode?.let { mpvDecoderMode = it }
         configs.videoPlayerRenderMode?.let { videoPlayerRenderMode = it }
         configs.videoPlayerUserAgent?.let { videoPlayerUserAgent = it }
         configs.videoPlayerHeaders?.let { videoPlayerHeaders = it }
@@ -849,6 +988,10 @@ object Configs {
         val iptvChannelFavoriteListVisible: Boolean? = null,
         val iptvChannelFavoriteList: ChannelFavoriteList? = null,
         val iptvChannelLastPlay: Channel? = null,
+        val iptvChannelLastGroup: String? = null,
+        val iptvChannelLastLineIdx: Int? = null,
+        val iptvChannelLastPlaybackEpgProgramme: EpgProgramme? = null,
+        val iptvChannelLastPlaySource: IptvSource? = null,
         val iptvChannelLinePlayableHostList: Set<String>? = null,
         val iptvChannelLinePlayableUrlList: Set<String>? = null,
         val iptvChannelChangeFlip: Boolean? = null,
@@ -873,6 +1016,7 @@ object Configs {
         val updateForceRemind: Boolean? = null,
         val updateChannel: String? = null,
         val videoPlayerCore: VideoPlayerCore? = null,
+        val mpvDecoderMode: MpvDecoderMode? = null,
         val videoPlayerRenderMode: VideoPlayerRenderMode? = null,
         val videoPlayerUserAgent: String? = null,
         val videoPlayerHeaders: String? = null,
@@ -908,6 +1052,10 @@ object Configs {
             cloudSyncWebDavUsername = null,
             cloudSyncWebDavPassword = null,
             iptvChannelLastPlay = null,
+            iptvChannelLastGroup = null,
+            iptvChannelLastLineIdx = null,
+            iptvChannelLastPlaybackEpgProgramme = null,
+            iptvChannelLastPlaySource = null,
             iptvChannelLinePlayableHostList = null,
             iptvChannelLinePlayableUrlList = null,
         )

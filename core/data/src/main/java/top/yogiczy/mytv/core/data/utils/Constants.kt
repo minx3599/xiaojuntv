@@ -12,17 +12,17 @@ object Constants {
     /**
      * 应用 标题
      */
-    const val APP_TITLE = "天光云影"
+    const val APP_TITLE = "小骏TV"
 
     /**
      * 应用 代码仓库
      */
-    const val APP_REPO = "https://github.com/yaoxieyoulei/mytv-android"
+    const val APP_REPO = ""
 
     /**
      * 交流群 telegram
      */
-    const val GROUP_TELEGRAM = "https://t.me/mytv_android"
+    const val GROUP_TELEGRAM = ""
 
     /**
      * 直播源
@@ -30,8 +30,8 @@ object Constants {
     val IPTV_SOURCE_LIST = IptvSourceList(
         listOf(
             IptvSource(
-                name = "无效占位订阅源",
-                url = "http://1.2.3.4/live.m3u",
+                name = "电信直播",
+                url = "http://192.168.2.1:88/iptv.m3u8",
             ),
         )
     )
@@ -47,8 +47,8 @@ object Constants {
     val EPG_SOURCE_LIST = EpgSourceList(
         listOf(
             EpgSource(
-                name = "默认节目单 fanmingming",
-                url = "https://live.fanmingming.com/e.xml",
+                name = "电信节目单",
+                url = "http://192.168.2.1:88/e.xml",
             ),
         )
     )
@@ -68,21 +68,17 @@ object Constants {
      * {name|uppercase} 转成大写
      *
      */
-    const val CHANNEL_LOGO_PROVIDER = "https://live.fanmingming.com/tv/{name|uppercase}.png"
+    const val CHANNEL_LOGO_PROVIDER = ""
 
     /**
      * GitHub加速代理地址
      */
-    const val GITHUB_PROXY = "https://ghp.ci/"
+    const val GITHUB_PROXY = ""
 
     /**
      * Git最新版本信息
      */
-    val GIT_RELEASE_LATEST_URL = mapOf(
-        "stable" to "${GITHUB_PROXY}https://raw.githubusercontent.com/yaoxieyoulei/mytv-android-update/main/tv-stable.json",
-        "beta" to "${GITHUB_PROXY}https://raw.githubusercontent.com/yaoxieyoulei/mytv-android-update/main/tv-beta.json",
-        "dev" to "${GITHUB_PROXY}https://raw.githubusercontent.com/yaoxieyoulei/mytv-android-update/main/tv-dev.json",
-    )
+    val GIT_RELEASE_LATEST_URL = emptyMap<String, String>()
 
     /**
      * 网络请求重试次数
@@ -102,7 +98,7 @@ object Constants {
     /**
      * 播放器加载超时
      */
-    const val VIDEO_PLAYER_LOAD_TIMEOUT = 1000L * 15 // 15秒
+    const val VIDEO_PLAYER_LOAD_TIMEOUT = 1000L * 30 // 30秒
 
     /**
      * 日志历史最大保留条数

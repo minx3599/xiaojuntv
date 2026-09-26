@@ -48,7 +48,6 @@ import top.yogiczy.mytv.tv.ui.material.LocalPopupManager
 import top.yogiczy.mytv.tv.ui.material.SimplePopup
 import top.yogiczy.mytv.tv.ui.rememberChildPadding
 import top.yogiczy.mytv.tv.ui.screen.components.AppScreen
-import top.yogiczy.mytv.tv.ui.screen.push.PushContent
 import top.yogiczy.mytv.tv.ui.screen.settings.settingsVM
 import top.yogiczy.mytv.tv.ui.theme.MyTvTheme
 import top.yogiczy.mytv.tv.ui.utils.focusOnLaunched
@@ -107,24 +106,6 @@ fun SettingsEpgSourceScreen(
                     onDelete = { onDelete(epgSource) },
                     onClearCache = { onClearCache(epgSource) },
                 )
-            }
-
-            item {
-                var visible by remember { mutableStateOf(false) }
-
-                ListItem(
-                    modifier = Modifier.handleKeyEvents(onSelect = { visible = true }),
-                    headlineContent = { Text("添加其他节目单") },
-                    selected = false,
-                    onClick = {},
-                )
-
-                SimplePopup(
-                    visibleProvider = { visible },
-                    onDismissRequest = { visible = false },
-                ) {
-                    PushContent()
-                }
             }
         }
     }

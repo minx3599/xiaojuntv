@@ -25,7 +25,7 @@ import top.yogiczy.mytv.tv.ui.utils.handleKeyEvents
 @Composable
 fun SettingsVideoPlayerCoreScreen(
     modifier: Modifier = Modifier,
-    coreProvider: () -> Configs.VideoPlayerCore = { Configs.VideoPlayerCore.MEDIA3 },
+    coreProvider: () -> Configs.VideoPlayerCore = { Configs.VideoPlayerCore.MPV },
     onCoreChanged: (Configs.VideoPlayerCore) -> Unit = {},
     onBackPressed: () -> Unit = {},
 ) {
@@ -52,6 +52,8 @@ fun SettingsVideoPlayerCoreScreen(
                     supportingContent = {
                         Text(
                             when (core) {
+                                Configs.VideoPlayerCore.MPV -> "mpv-player 内核，适合电视直播与组播源"
+                                Configs.VideoPlayerCore.VLC -> "VLC 电视播放内核，支持硬解失败后自动回退"
                                 Configs.VideoPlayerCore.MEDIA3 -> "支持全部功能"
                                 Configs.VideoPlayerCore.IJK -> "部分功能可能无法正常使用，仅支持armeabi-v7a、arm64-v8a"
                             }
@@ -66,7 +68,7 @@ fun SettingsVideoPlayerCoreScreen(
                         containerColor = MaterialTheme.colorScheme.onSurface.copy(0.1f),
                     ),
                     selected = false,
-                    onClick = {},
+                    onClick = { onCoreChanged(core) },
                 )
             }
         }

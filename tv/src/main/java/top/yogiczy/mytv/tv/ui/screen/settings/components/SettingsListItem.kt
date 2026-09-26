@@ -10,13 +10,7 @@ import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Circle
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -24,9 +18,6 @@ import androidx.compose.ui.unit.dp
 import androidx.tv.material3.Icon
 import androidx.tv.material3.ListItem
 import androidx.tv.material3.Text
-import top.yogiczy.mytv.tv.ui.material.LocalPopupManager
-import top.yogiczy.mytv.tv.ui.material.SimplePopup
-import top.yogiczy.mytv.tv.ui.screen.push.PushContent
 import top.yogiczy.mytv.tv.ui.theme.MyTvTheme
 import top.yogiczy.mytv.tv.ui.utils.handleKeyEvents
 
@@ -43,11 +34,6 @@ fun SettingsListItem(
     remoteConfig: Boolean = false,
     link: Boolean = false,
 ) {
-    val popupManager = LocalPopupManager.current
-    val focusRequester = remember { FocusRequester() }
-
-    var showPush by remember { mutableStateOf(false) }
-
     ListItem(
         selected = false,
         onClick = {},
@@ -89,25 +75,13 @@ fun SettingsListItem(
         },
         supportingContent = { supportingContent?.let { Text(it) } },
         modifier = modifier
-            .focusRequester(focusRequester)
             .handleKeyEvents(
                 onSelect = {
                     if (onSelect != null) onSelect()
-                    else if (remoteConfig) {
-                        popupManager.push(focusRequester, true)
-                        showPush = true
-                    }
                 },
                 onLongSelect = { onLongSelect() },
             ),
     )
-
-    SimplePopup(
-        visibleProvider = { showPush },
-        onDismissRequest = { showPush = false },
-    ) {
-        PushContent()
-    }
 }
 
 @Composable

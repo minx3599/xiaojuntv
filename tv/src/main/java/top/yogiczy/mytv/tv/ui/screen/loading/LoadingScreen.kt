@@ -30,6 +30,8 @@ import androidx.tv.material3.Text
 import top.yogiczy.mytv.tv.ui.material.CircularProgressIndicator
 import top.yogiczy.mytv.tv.ui.rememberChildPadding
 import top.yogiczy.mytv.tv.ui.screen.components.AppScreen
+import top.yogiczy.mytv.tv.ui.screen.network.NetworkStatus
+import top.yogiczy.mytv.tv.ui.screen.network.NetworkStatusPanel
 import top.yogiczy.mytv.tv.ui.screen.main.MainUiState
 import top.yogiczy.mytv.tv.ui.screen.settings.settingsVM
 import top.yogiczy.mytv.tv.ui.theme.MyTvTheme
@@ -43,6 +45,7 @@ fun LoadingScreen(
     mainUiState: MainUiState,
     toDashboardScreen: () -> Unit = {},
     toSettingsScreen: () -> Unit = {},
+    onRetry: () -> Unit = {},
     onBackPressed: () -> Unit = {},
 ) {
     var hasReady by remember { mutableStateOf(false) }
@@ -72,7 +75,12 @@ fun LoadingScreen(
         when (mainUiState) {
             is MainUiState.Ready -> LoadingStateLoading()
             is MainUiState.Loading -> LoadingStateLoading(messageProvider = { mainUiState.message })
-            is MainUiState.Error -> LoadingStateError(messageProvider = { mainUiState.message })
+            is MainUiState.Error -> NetworkStatusPanel(
+                modifier = Modifier.align(Alignment.Center),
+                status = NetworkStatus.SOURCE_TIMEOUT,
+                onPrimaryAction = onRetry,
+                onSecondaryAction = toSettingsScreen,
+            )
         }
     }
 }

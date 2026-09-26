@@ -58,7 +58,6 @@ import top.yogiczy.mytv.tv.ui.material.TagDefaults
 import top.yogiczy.mytv.tv.ui.rememberChildPadding
 import top.yogiczy.mytv.tv.ui.screen.components.AppScaffoldHeaderBtn
 import top.yogiczy.mytv.tv.ui.screen.components.AppScreen
-import top.yogiczy.mytv.tv.ui.screen.push.PushContent
 import top.yogiczy.mytv.tv.ui.theme.MyTvTheme
 import top.yogiczy.mytv.tv.ui.utils.focusOnLaunched
 import top.yogiczy.mytv.tv.ui.utils.gridColumns
@@ -160,24 +159,6 @@ private fun SettingsIptvSourceContent(
                 onDelete = { onDelete(iptvSource) },
                 onClearCache = { onClearCache(iptvSource) },
             )
-        }
-
-        item {
-            var visible by remember { mutableStateOf(false) }
-
-            ListItem(
-                modifier = Modifier.handleKeyEvents(onSelect = { visible = true }),
-                headlineContent = { Text("添加其他直播源") },
-                selected = false,
-                onClick = {},
-            )
-
-            SimplePopup(
-                visibleProvider = { visible },
-                onDismissRequest = { visible = false },
-            ) {
-                PushContent()
-            }
         }
     }
 }

@@ -11,6 +11,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import top.yogiczy.mytv.core.data.entities.channel.Channel
 import top.yogiczy.mytv.core.data.entities.channel.ChannelFavoriteList
+import top.yogiczy.mytv.core.data.entities.epg.EpgProgramme
 import top.yogiczy.mytv.core.data.entities.epg.EpgProgrammeReserveList
 import top.yogiczy.mytv.core.data.entities.epgsource.EpgSource
 import top.yogiczy.mytv.core.data.entities.epgsource.EpgSourceList
@@ -50,7 +51,7 @@ class SettingsViewModel : ViewModel() {
             afterSetWhenCloudSyncAutoPull()
         }
 
-    private var _appAgreementAgreed by mutableStateOf(false)
+    private var _appAgreementAgreed by mutableStateOf(true)
     var appAgreementAgreed: Boolean
         get() = _appAgreementAgreed
         set(value) {
@@ -59,7 +60,7 @@ class SettingsViewModel : ViewModel() {
             afterSetWhenCloudSyncAutoPull()
         }
 
-    private var _appStartupScreen by mutableStateOf(Screens.Dashboard.name)
+    private var _appStartupScreen by mutableStateOf(Screens.Live.name)
     var appStartupScreen: String
         get() = _appStartupScreen
         set(value) {
@@ -212,6 +213,40 @@ class SettingsViewModel : ViewModel() {
             afterSetWhenCloudSyncAutoPull()
         }
 
+    private var _iptvChannelLastGroup by mutableStateOf("")
+    var iptvChannelLastGroup: String
+        get() = _iptvChannelLastGroup
+        set(value) {
+            _iptvChannelLastGroup = value
+            Configs.iptvChannelLastGroup = value
+        }
+
+    /** 播放器重建时恢复当前线路。 */
+    private var _iptvChannelLastLineIdx by mutableIntStateOf(0)
+    var iptvChannelLastLineIdx: Int
+        get() = _iptvChannelLastLineIdx
+        set(value) {
+            _iptvChannelLastLineIdx = value.coerceAtLeast(0)
+            Configs.iptvChannelLastLineIdx = _iptvChannelLastLineIdx
+        }
+
+    /** 播放器重建时恢复当前节目回放。 */
+    private var _iptvChannelLastPlaybackEpgProgramme by mutableStateOf<EpgProgramme?>(null)
+    var iptvChannelLastPlaybackEpgProgramme: EpgProgramme?
+        get() = _iptvChannelLastPlaybackEpgProgramme
+        set(value) {
+            _iptvChannelLastPlaybackEpgProgramme = value
+            Configs.iptvChannelLastPlaybackEpgProgramme = value
+        }
+
+    private var _iptvChannelLastPlaySource by mutableStateOf(IptvSource())
+    var iptvChannelLastPlaySource: IptvSource
+        get() = _iptvChannelLastPlaySource
+        set(value) {
+            _iptvChannelLastPlaySource = value
+            Configs.iptvChannelLastPlaySource = value
+        }
+
     private var _iptvChannelLinePlayableHostList by mutableStateOf(emptySet<String>())
     var iptvChannelLinePlayableHostList: Set<String>
         get() = _iptvChannelLinePlayableHostList
@@ -347,7 +382,7 @@ class SettingsViewModel : ViewModel() {
             afterSetWhenCloudSyncAutoPull()
         }
 
-    private var _uiUseClassicPanelScreen by mutableStateOf(false)
+    private var _uiUseClassicPanelScreen by mutableStateOf(true)
     var uiUseClassicPanelScreen: Boolean
         get() = _uiUseClassicPanelScreen
         set(value) {
@@ -419,12 +454,21 @@ class SettingsViewModel : ViewModel() {
             afterSetWhenCloudSyncAutoPull()
         }
 
-    private var _videoPlayerCore by mutableStateOf(Configs.VideoPlayerCore.MEDIA3)
+    private var _videoPlayerCore by mutableStateOf(Configs.videoPlayerCore)
     var videoPlayerCore: Configs.VideoPlayerCore
         get() = _videoPlayerCore
         set(value) {
             _videoPlayerCore = value
             Configs.videoPlayerCore = value
+            afterSetWhenCloudSyncAutoPull()
+        }
+
+    private var _mpvDecoderMode by mutableStateOf(Configs.mpvDecoderMode)
+    var mpvDecoderMode: Configs.MpvDecoderMode
+        get() = _mpvDecoderMode
+        set(value) {
+            _mpvDecoderMode = value
+            Configs.mpvDecoderMode = value
             afterSetWhenCloudSyncAutoPull()
         }
 
@@ -464,7 +508,7 @@ class SettingsViewModel : ViewModel() {
             afterSetWhenCloudSyncAutoPull()
         }
 
-    private var _videoPlayerDisplayMode by mutableStateOf(VideoPlayerDisplayMode.ORIGINAL)
+    private var _videoPlayerDisplayMode by mutableStateOf(VideoPlayerDisplayMode.FILL)
     var videoPlayerDisplayMode: VideoPlayerDisplayMode
         get() = _videoPlayerDisplayMode
         set(value) {
@@ -643,6 +687,10 @@ class SettingsViewModel : ViewModel() {
         _iptvChannelFavoriteListVisible = Configs.iptvChannelFavoriteListVisible
         _iptvChannelFavoriteList = Configs.iptvChannelFavoriteList
         _iptvChannelLastPlay = Configs.iptvChannelLastPlay
+        _iptvChannelLastGroup = Configs.iptvChannelLastGroup
+        _iptvChannelLastLineIdx = Configs.iptvChannelLastLineIdx
+        _iptvChannelLastPlaybackEpgProgramme = Configs.iptvChannelLastPlaybackEpgProgramme
+        _iptvChannelLastPlaySource = Configs.iptvChannelLastPlaySource
         _iptvChannelLinePlayableHostList = Configs.iptvChannelLinePlayableHostList
         _iptvChannelLinePlayableUrlList = Configs.iptvChannelLinePlayableUrlList
         _iptvChannelChangeFlip = Configs.iptvChannelChangeFlip
@@ -667,6 +715,7 @@ class SettingsViewModel : ViewModel() {
         _updateForceRemind = Configs.updateForceRemind
         _updateChannel = Configs.updateChannel
         _videoPlayerCore = Configs.videoPlayerCore
+        _mpvDecoderMode = Configs.mpvDecoderMode
         _videoPlayerRenderMode = Configs.videoPlayerRenderMode
         _videoPlayerUserAgent = Configs.videoPlayerUserAgent
         _videoPlayerHeaders = Configs.videoPlayerHeaders

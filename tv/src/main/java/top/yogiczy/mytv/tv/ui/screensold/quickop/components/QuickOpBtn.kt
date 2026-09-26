@@ -13,6 +13,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -34,6 +35,8 @@ fun QuickOpBtn(
     onLongSelect: () -> Unit = {},
 ) {
     var isFocused by remember { mutableStateOf(false) }
+    val currentOnSelect by rememberUpdatedState(onSelect)
+    val currentOnLongSelect by rememberUpdatedState(onLongSelect)
 
     val colorScheme = MaterialTheme.colorScheme
     val containerColor = remember(isFocused) {
@@ -47,7 +50,7 @@ fun QuickOpBtn(
 
     Box(
         modifier = modifier
-            .handleKeyEvents(onSelect = onSelect, onLongSelect = onLongSelect)
+            .handleKeyEvents(onSelect = currentOnSelect, onLongSelect = currentOnLongSelect)
             .onFocusChanged { isFocused = it.hasFocus || it.isFocused }
             .focusable()
             .background(containerColor, MaterialTheme.shapes.medium),

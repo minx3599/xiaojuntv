@@ -12,10 +12,8 @@ enum class Screens(
     Channels,
     Favorites,
     Search,
-    Push,
     Settings(listOf(SettingsScreen.START_DESTINATION)),
     About,
-    Update,
     MultiView,
     ;
 

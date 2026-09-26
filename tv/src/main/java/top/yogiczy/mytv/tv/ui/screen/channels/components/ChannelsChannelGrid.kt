@@ -18,6 +18,7 @@ import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.platform.LocalFocusManager
@@ -47,6 +48,7 @@ fun ChannelsChannelGrid(
     onChannelFavoriteToggle: (Channel) -> Unit = {},
     epgListProvider: () -> EpgList = { EpgList() },
     inFavoriteMode: Boolean = false,
+    topFocusRequester: FocusRequester? = null,
     updateTopBarVisibility: (Boolean) -> Unit = {},
 ) {
     val channelList = channelListProvider()
@@ -102,6 +104,12 @@ fun ChannelsChannelGrid(
                         Modifier
                             .focusRequester(firstItemFocusRequester)
                             .onFocusChanged { isFirstItemFocused = it.isFocused },
+                    )
+                    .then(
+                        topFocusRequester?.let { requester ->
+                            if (index < 5) Modifier.focusProperties { up = requester }
+                            else Modifier
+                        } ?: Modifier,
                     ),
                 channelProvider = { channel },
                 onChannelSelected = { onChannelSelected(channel) },

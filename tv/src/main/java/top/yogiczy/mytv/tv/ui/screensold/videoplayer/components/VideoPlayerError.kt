@@ -1,54 +1,33 @@
 package top.yogiczy.mytv.tv.ui.screensold.videoplayer.components
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.tv.material3.LocalContentColor
-import androidx.tv.material3.MaterialTheme
-import androidx.tv.material3.Text
 import top.yogiczy.mytv.tv.ui.theme.MyTvTheme
+import top.yogiczy.mytv.tv.ui.screen.network.NetworkStatus
+import top.yogiczy.mytv.tv.ui.screen.network.NetworkStatusPanel
 
 @Composable
 fun VideoPlayerError(
     modifier: Modifier = Modifier,
     errorProvider: () -> String? = { null },
+    onRetry: (() -> Unit)? = null,
+    onBackToChannels: (() -> Unit)? = null,
 ) {
     val error = errorProvider() ?: return
 
-    Column(
-        modifier = modifier
-            .background(
-                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
-                shape = MaterialTheme.shapes.medium,
-            )
-            .padding(horizontal = 20.dp, vertical = 10.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Text(
-            text = "播放失败",
-            style = MaterialTheme.typography.titleLarge,
-            color = MaterialTheme.colorScheme.error,
-        )
-
-        Text(
-            text = error,
-            style = MaterialTheme.typography.bodyMedium,
-            color = LocalContentColor.current.copy(alpha = 0.8f),
-        )
-
-        getErrorCodeDesc(error)?.let { nnDesc ->
-            Text(
-                text = nnDesc,
-                style = MaterialTheme.typography.bodyMedium,
-                color = LocalContentColor.current.copy(alpha = 0.8f),
-            )
-        }
-    }
+    NetworkStatusPanel(
+        modifier = modifier,
+        status = if (error.contains("TIMEOUT") || error.contains("LOAD_TIMEOUT")) {
+            NetworkStatus.SOURCE_TIMEOUT
+        } else {
+            NetworkStatus.PLAYBACK_FAILED
+        },
+        detail = getErrorCodeDesc(error),
+        onPrimaryAction = onRetry,
+        onSecondaryAction = onBackToChannels,
+    )
 }
 
 private fun getErrorCodeDesc(error: String): String? {

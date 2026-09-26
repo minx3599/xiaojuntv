@@ -119,8 +119,10 @@ fun QuickOpBtnList(
                 imageVector = Icons.Outlined.SlowMotionVideo,
                 onSelect = {
                     settingsViewModel.videoPlayerCore = when (settingsViewModel.videoPlayerCore) {
+                        Configs.VideoPlayerCore.MPV -> Configs.VideoPlayerCore.VLC
+                        Configs.VideoPlayerCore.VLC -> Configs.VideoPlayerCore.MEDIA3
                         Configs.VideoPlayerCore.MEDIA3 -> Configs.VideoPlayerCore.IJK
-                        Configs.VideoPlayerCore.IJK -> Configs.VideoPlayerCore.MEDIA3
+                        Configs.VideoPlayerCore.IJK -> Configs.VideoPlayerCore.MPV
                     }
                 },
             )

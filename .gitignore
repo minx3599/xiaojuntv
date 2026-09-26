@@ -23,5 +23,8 @@
 local.properties
 key.properties
 keystore.jks
+.env.tencent
+.env.github
+.env.github.local
 .kotlin
 /release

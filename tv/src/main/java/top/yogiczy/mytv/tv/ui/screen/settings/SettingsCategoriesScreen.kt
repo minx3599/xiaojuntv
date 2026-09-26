@@ -22,7 +22,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.FormatListBulleted
 import androidx.compose.material.icons.automirrored.outlined.LibraryBooks
 import androidx.compose.material.icons.outlined.BugReport
-import androidx.compose.material.icons.outlined.CloudSync
 import androidx.compose.material.icons.outlined.ColorLens
 import androidx.compose.material.icons.outlined.ControlCamera
 import androidx.compose.material.icons.outlined.Devices
@@ -30,7 +29,6 @@ import androidx.compose.material.icons.outlined.DisplaySettings
 import androidx.compose.material.icons.outlined.LiveTv
 import androidx.compose.material.icons.outlined.Shield
 import androidx.compose.material.icons.outlined.SmartDisplay
-import androidx.compose.material.icons.outlined.Update
 import androidx.compose.material.icons.outlined.Wifi
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -200,16 +198,13 @@ enum class SettingsCategories(
     UI(Icons.Outlined.DisplaySettings, "界面"),
     CONTROL(Icons.Outlined.ControlCamera, "控制"),
     VIDEO_PLAYER(Icons.Outlined.SmartDisplay, "播放器"),
-    UPDATE(Icons.Outlined.Update, "更新"),
 
     // FAVORITE(Icons.Outlined.FavoriteBorder, "收藏"),
     // EPG_RESERVE(Icons.Default.BookmarkBorder, "预约"),
     NETWORK(Icons.Outlined.Wifi, "网络"),
     THEME(Icons.Outlined.ColorLens, "主题"),
-    CLOUD_SYNC(Icons.Outlined.CloudSync, "云同步"),
     DEBUG(Icons.Outlined.BugReport, "调试"),
     LOG(Icons.AutoMirrored.Outlined.FormatListBulleted, "日志"),
-    PERMISSIONS(Icons.Outlined.Shield, "权限"),
 }
 
 enum class SettingsSubCategories {
@@ -224,11 +219,10 @@ enum class SettingsSubCategories {
     UI_DENSITY_SCALE_RATIO,
     UI_FONT_SCALE_RATIO,
     VIDEO_PLAYER_CORE,
+    MPV_DECODER_MODE,
     VIDEO_PLAYER_RENDER_MODE,
     VIDEO_PLAYER_DISPLAY_MODE,
     VIDEO_PLAYER_LOAD_TIMEOUT,
-    UPDATE_CHANNEL,
-    CLOUD_SYNC_PROVIDER,
 }
 
 @Preview(device = "id:Android TV (720p)")

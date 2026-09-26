@@ -1,7 +1,9 @@
 package top.yogiczy.mytv.tv.ui.screen.channels
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -10,6 +12,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.Text
@@ -33,8 +37,10 @@ fun ChannelsScreen(
     onBackPressed: () -> Unit = {},
 ) {
     var currentChannelGroupIdx by rememberSaveable { mutableIntStateOf(0) }
+    val groupFirstItemFocusRequester = remember { FocusRequester() }
+    val channelGroupList = channelGroupListProvider()
     val currentChannelGroup = remember(currentChannelGroupIdx) {
-        channelGroupListProvider().getOrElse(currentChannelGroupIdx) { ChannelGroup() }
+        channelGroupList.getOrElse(currentChannelGroupIdx) { ChannelGroup() }
     }
 
     AppScreen(
@@ -51,18 +57,31 @@ fun ChannelsScreen(
             ChannelsChannelGroupList(
                 channelGroupListProvider = channelGroupListProvider,
                 currentChannelGroupProvider = { currentChannelGroup },
+                firstItemFocusRequester = groupFirstItemFocusRequester,
                 onChannelGroupSelected = {
                     currentChannelGroupIdx = channelGroupListProvider().indexOf(it)
                 },
             )
 
-            ChannelsChannelGrid(
-                channelListProvider = { currentChannelGroup.channelList },
-                onChannelSelected = onChannelSelected,
-                onChannelFavoriteToggle = onChannelFavoriteToggle,
-                epgListProvider = epgListProvider,
-                updateTopBarVisibility = updateTopBarVisibility,
-            )
+            if (currentChannelGroup.channelList.isEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(40.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text("当前分组暂无可用频道")
+                }
+            } else {
+                ChannelsChannelGrid(
+                    channelListProvider = { currentChannelGroup.channelList },
+                    onChannelSelected = onChannelSelected,
+                    onChannelFavoriteToggle = onChannelFavoriteToggle,
+                    epgListProvider = epgListProvider,
+                    topFocusRequester = groupFirstItemFocusRequester.takeIf { channelGroupList.size > 1 },
+                    updateTopBarVisibility = updateTopBarVisibility,
+                )
+            }
         }
     }
 }

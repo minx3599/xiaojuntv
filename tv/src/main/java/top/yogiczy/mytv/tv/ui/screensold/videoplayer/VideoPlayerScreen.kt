@@ -24,6 +24,7 @@ import top.yogiczy.mytv.tv.ui.screen.settings.settingsVM
 import top.yogiczy.mytv.tv.ui.screensold.videoplayer.components.VideoPlayerError
 import top.yogiczy.mytv.tv.ui.screensold.videoplayer.components.VideoPlayerMetadata
 import top.yogiczy.mytv.tv.ui.screensold.videoplayer.player.Media3VideoPlayer
+import top.yogiczy.mytv.tv.ui.screensold.videoplayer.player.MpvVideoPlayer
 import top.yogiczy.mytv.tv.ui.screensold.videoplayer.player.VideoPlayer
 import top.yogiczy.mytv.tv.ui.theme.MyTvTheme
 import top.yogiczy.mytv.tv.ui.tooling.PreviewWithLayoutGrids
@@ -35,6 +36,8 @@ fun VideoPlayerScreen(
     modifier: Modifier = Modifier,
     state: VideoPlayerState = rememberVideoPlayerState(),
     showMetadataProvider: () -> Boolean = { false },
+    onRetry: (() -> Unit)? = null,
+    onBackToChannels: (() -> Unit)? = null,
 ) {
     val context = LocalContext.current
 
@@ -51,7 +54,13 @@ fun VideoPlayerScreen(
             VideoPlayerDisplayMode.WIDE -> Modifier.aspectRatio(2.35f / 1)
         }
 
-        when (settingsVM.videoPlayerRenderMode) {
+        val renderMode = if (state.instance is MpvVideoPlayer) {
+            Configs.VideoPlayerRenderMode.SURFACE_VIEW
+        } else {
+            settingsVM.videoPlayerRenderMode
+        }
+
+        when (renderMode) {
             Configs.VideoPlayerRenderMode.SURFACE_VIEW -> {
                 AndroidView(
                     modifier = Modifier
@@ -87,6 +96,8 @@ fun VideoPlayerScreen(
         showMetadataProvider = showMetadataProvider,
         metadataProvider = state::metadata,
         errorProvider = state::error,
+        onRetry = onRetry,
+        onBackToChannels = onBackToChannels,
     )
 }
 
@@ -96,6 +107,8 @@ private fun VideoPlayerScreenCover(
     showMetadataProvider: () -> Boolean = { false },
     metadataProvider: () -> VideoPlayer.Metadata = { VideoPlayer.Metadata() },
     errorProvider: () -> String? = { null },
+    onRetry: (() -> Unit)? = null,
+    onBackToChannels: (() -> Unit)? = null,
 ) {
     val childPadding = rememberChildPadding()
 
@@ -107,10 +120,12 @@ private fun VideoPlayerScreenCover(
             )
         }
 
-        VideoPlayerError(
-            modifier = Modifier.align(Alignment.Center),
-            errorProvider = errorProvider,
-        )
+            VideoPlayerError(
+                modifier = Modifier.align(Alignment.Center),
+                errorProvider = errorProvider,
+                onRetry = onRetry,
+                onBackToChannels = onBackToChannels,
+            )
     }
 }
 

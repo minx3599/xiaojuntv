@@ -35,11 +35,11 @@ import kotlin.math.absoluteValue
 
 fun Modifier.ifElse(
     condition: () -> Boolean, ifTrueModifier: Modifier, ifFalseModifier: Modifier = Modifier
-): Modifier = then(if (condition()) ifTrueModifier else ifFalseModifier)
+): Modifier = this.then(if (condition()) ifTrueModifier else ifFalseModifier)
 
 fun Modifier.ifElse(
     condition: Boolean, ifTrueModifier: Modifier, ifFalseModifier: Modifier = Modifier
-): Modifier = ifElse({ condition }, ifTrueModifier, ifFalseModifier)
+): Modifier = this.ifElse({ condition }, ifTrueModifier, ifFalseModifier)
 
 fun Modifier.focusOnLaunched(key: Any = Unit): Modifier = composed {
     val focusRequester = remember { FocusRequester() }

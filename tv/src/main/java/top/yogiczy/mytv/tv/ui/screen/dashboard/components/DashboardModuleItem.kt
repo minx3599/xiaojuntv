@@ -1,6 +1,7 @@
 package top.yogiczy.mytv.tv.ui.screen.dashboard.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -16,6 +17,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.ClickableSurfaceDefaults
+import androidx.tv.material3.Border
 import androidx.tv.material3.Icon
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Surface
@@ -40,6 +42,13 @@ fun DashboardModuleItem(
         colors = ClickableSurfaceDefaults.colors(
             containerColor = MaterialTheme.colorScheme.onSurface.copy(0.1f),
         ),
+        border = ClickableSurfaceDefaults.border(
+            focusedBorder = Border(
+                BorderStroke(2.dp, MaterialTheme.colorScheme.onSurface),
+                inset = 2.dp,
+            ),
+        ),
+        scale = ClickableSurfaceDefaults.scale(focusedScale = 1f),
         onClick = {},
     ) {
         Column(

@@ -1,6 +1,7 @@
 package top.yogiczy.mytv.tv.ui.screen.channels.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -18,6 +19,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.Icon
@@ -57,6 +59,11 @@ fun ChannelsChannelGroupItem(
             .handleKeyEvents(onSelect = onChannelGroupSelected)
             .onFocusChanged { isFocused = it.hasFocus || it.isFocused }
             .focusable()
+            .border(
+                width = if (isFocused) 2.dp else 0.dp,
+                color = if (isFocused) MaterialTheme.colorScheme.onSurface else Color.Transparent,
+                shape = MaterialTheme.shapes.extraLarge,
+            )
             .background(containerColor, MaterialTheme.shapes.extraLarge),
     ) {
         Row(

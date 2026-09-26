@@ -1,0 +1,59 @@
+plugins {
+    id 'com.android.application'
+}
+
+def keystorePropertiesFile = rootProject.file('key.properties')
+def keystoreProperties = new Properties()
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+}
+
+android {
+    namespace 'top.yogiczy.mytv.tv'
+    compileSdk 36
+
+    defaultConfig {
+        applicationId 'com.xiaojun.tv'
+        minSdk 18
+        targetSdk 36
+        versionCode 2
+        versionName '3.3.10-api18'
+    }
+
+    signingConfigs {
+        release {
+            def localKeystore = rootProject.file('keystore.jks')
+            def configuredStore = System.getenv('KEYSTORE') ?: keystoreProperties.getProperty('storeFile')
+            def userKeystore = configuredStore == null ? localKeystore : file(configuredStore)
+
+            storeFile userKeystore.exists() ? userKeystore : localKeystore
+            storePassword System.getenv('KEYSTORE_PASSWORD') ?: keystoreProperties.getProperty('storePassword')
+            keyAlias System.getenv('KEY_ALIAS') ?: keystoreProperties.getProperty('keyAlias')
+            keyPassword System.getenv('KEY_PASSWORD') ?: keystoreProperties.getProperty('keyPassword')
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            signingConfig signingConfigs.getByName('release')
+        }
+    }
+
+    sourceSets {
+        main {
+            java.srcDirs = ['src/main/java']
+            res.srcDirs = ['src/main/res']
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+}
+
+dependencies {
+    implementation project(':ijkplayer-java')
+}

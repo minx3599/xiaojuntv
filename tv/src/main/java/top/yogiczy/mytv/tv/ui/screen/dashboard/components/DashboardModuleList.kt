@@ -108,7 +108,7 @@ fun DashboardModuleList(
                     .focusRequester(runtime.lastItemFocusRequester)
                     .handleKeyEvents(onRight = { runtime.scrollToFirst() }),
                 imageVector = Icons.Outlined.Info,
-                title = "关于",
+                title = "关于小骏电视",
                 onSelected = toAboutScreen,
             )
         }

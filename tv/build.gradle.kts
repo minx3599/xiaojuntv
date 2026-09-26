@@ -1,13 +1,10 @@
 import com.android.build.gradle.internal.dsl.BaseAppModuleExtension
-import java.io.FileInputStream
-import java.util.Properties
 
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.compose)
     alias(libs.plugins.kotlin.serialization)
-    alias(libs.plugins.sentry.android.gradle)
 }
 
 android {
@@ -18,7 +15,7 @@ android {
     compileSdk = libs.versions.compileSdk.get().toInt()
 
     defaultConfig {
-        applicationId = "top.yogiczy.slcs.tv"
+        applicationId = "com.xiaojun.tv"
         minSdk = libs.versions.minSdk.get().toInt()
         targetSdk = libs.versions.targetSdk.get().toInt()
         versionCode = 2
@@ -26,8 +23,6 @@ android {
         vectorDrawables {
             useSupportLibrary = true
         }
-
-        buildConfigField("String", "SENTRY_DSN", "\"${getProperty("sentry.dsn") ?: ""}\"")
     }
 
     buildTypes {
@@ -126,10 +121,12 @@ dependencies {
         implementation(libs.androidx.media3.exoplayer.rtsp)
         implementation(libs.androidx.media3.exoplayer.dash)
         implementation(libs.androidx.media3.ui)
+        implementation(files("libs/media3-decoder-ffmpeg-1.11.1.aar"))
     }
 
     implementation("com.github.CarGuo.GSYVideoPlayer:gsyvideoplayer-java:v10.0.0")
     implementation("com.github.CarGuo.GSYVideoPlayer:gsyvideoplayer-ex_so:v10.0.0")
+    implementation("org.videolan.android:libvlc-all:3.7.6")
 
     // 二维码
     implementation(libs.qrose)
@@ -138,41 +135,19 @@ dependencies {
     implementation(libs.coil.svg)
 
     implementation(libs.okhttp)
-    implementation(libs.androidasync)
 
     implementation(libs.tinypinyin)
 
     implementation(project(":core:data"))
     implementation(project(":core:designsystem"))
     implementation(project(":core:util"))
-    implementation(project(":allinone"))
     // implementation(project(":tbsx5"))
 
-    implementation(fileTree(mapOf("dir" to "libs", "include" to listOf("*.aar", "*.jar"))))
+    implementation(fileTree(mapOf("dir" to "libs", "include" to listOf("*.jar"))))
 
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
     coreLibraryDesugaring(libs.desugar.jdk.libs)
-}
-
-sentry {
-    org.set("yogiczy")
-    projectName.set("mytv-android")
-    authToken.set(getProperty("sentry.auth_token") ?: System.getenv("SENTRY_AUTH_TOKEN"))
-    ignoredBuildTypes.set(setOf("debug"))
-    autoUploadProguardMapping = false
-}
-
-fun getProperty(key: String): String? {
-    val propertiesFile = rootProject.file("local.properties")
-    if (propertiesFile.exists()) {
-        val properties = Properties()
-        properties.load(FileInputStream(propertiesFile))
-
-        return properties.getProperty(key)
-    }
-
-    return null
 }

@@ -18,11 +18,13 @@ abstract class VideoPlayer(
 ) {
     protected var metadata = Metadata()
 
-    open fun initialize() {
-        clearAllListeners()
-    }
+    open fun initialize() = Unit
 
     open fun release() {
+        loadTimeoutJob?.cancel()
+        loadTimeoutJob = null
+        interruptJob?.cancel()
+        interruptJob = null
         clearAllListeners()
     }
 
@@ -184,6 +186,7 @@ abstract class VideoPlayer(
         companion object {
             val UNSUPPORTED_TYPE = PlaybackException("ERROR_UNSUPPORTED_TYPE", 10002)
             val LOAD_TIMEOUT = PlaybackException("ERROR_LOAD_TIMEOUT", 10003)
+            val STALLED = PlaybackException("ERROR_PLAYBACK_STALLED", 10004)
         }
     }
 

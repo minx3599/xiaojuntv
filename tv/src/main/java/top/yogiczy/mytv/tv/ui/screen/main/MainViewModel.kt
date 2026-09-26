@@ -33,8 +33,6 @@ import top.yogiczy.mytv.core.data.utils.ChannelAlias
 import top.yogiczy.mytv.core.data.utils.ChannelUtil
 import top.yogiczy.mytv.core.data.utils.Constants
 import top.yogiczy.mytv.core.data.utils.Logger
-import top.yogiczy.mytv.tv.sync.CloudSync
-import top.yogiczy.mytv.tv.sync.CloudSyncData
 import top.yogiczy.mytv.tv.ui.material.Snackbar
 import top.yogiczy.mytv.tv.ui.material.SnackbarType
 import top.yogiczy.mytv.tv.ui.utils.Configs
@@ -52,7 +50,6 @@ class MainViewModel : ViewModel() {
 
     init {
         viewModelScope.launch {
-            pullCloudSyncData()
             init()
             _lastJob?.join()
             refreshOtherIptvSource()
@@ -66,20 +63,6 @@ class MainViewModel : ViewModel() {
             refreshChannel()
             refreshEpg()
             mergeEpgMetadata()
-        }
-    }
-
-    private suspend fun pullCloudSyncData() {
-        if (!Configs.cloudSyncAutoPull) return
-
-        _uiState.value = MainUiState.Loading("拉取云端数据")
-        runCatching {
-            val syncData = CloudSync.pull()
-
-            if (syncData != CloudSyncData.EMPTY) {
-                syncData.apply()
-                needRefresh()
-            }
         }
     }
 
@@ -191,7 +174,12 @@ class MainViewModel : ViewModel() {
         }
 
     private suspend fun refreshEpg() {
-        if (!Configs.epgEnable) return
+        // 旧版本可能已经保存了“关闭 EPG”，但没有任何节目单来源。此时跟随
+        // 直播源中的 x-tvg-url，避免升级后节目单永久保持空白；用户一旦配置过
+        // 独立来源，关闭开关仍然有效。
+        val useBuiltInIptvEpg = !Configs.epgEnable &&
+                Configs.iptvSourceCurrent.url.endsWith("/iptv.m3u8")
+        if (!Configs.epgEnable && !useBuiltInIptvEpg) return
 
         if (Calendar.getInstance().get(Calendar.HOUR_OF_DAY) < Configs.epgRefreshTimeThreshold) {
             val threshold = Configs.epgRefreshTimeThreshold.toString().padStart(2, '0') + ":00"
@@ -205,7 +193,7 @@ class MainViewModel : ViewModel() {
             val channelGroupList = (_uiState.value as MainUiState.Ready).channelGroupList
 
             flow {
-                val epgSource = Configs.epgSourceFollowIptv
+                val epgSource = (Configs.epgSourceFollowIptv || useBuiltInIptvEpg)
                     .takeIf { it }
                     ?.let {
                         val iptvRepository = IptvRepository(Configs.iptvSourceCurrent)

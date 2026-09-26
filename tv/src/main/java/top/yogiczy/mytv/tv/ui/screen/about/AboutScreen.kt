@@ -56,6 +56,30 @@ fun AboutScreen(
         ) {
             item {
                 ListItem(
+                    headlineContent = { Text("小骏TV") },
+                    supportingContent = {
+                        Text("面向电视遥控器设计的开源直播播放器")
+                    },
+                    trailingContent = { Text("电视版") },
+                    selected = false,
+                    onClick = {},
+                )
+            }
+
+            item {
+                ListItem(
+                    headlineContent = { Text("开源许可") },
+                    supportingContent = {
+                        Text("本项目遵循 MIT License，第三方组件与素材按各自许可使用")
+                    },
+                    trailingContent = { Text("MIT") },
+                    selected = false,
+                    onClick = {},
+                )
+            }
+
+            item {
+                ListItem(
                     headlineContent = { Text("应用标识") },
                     trailingContent = {
                         Text(

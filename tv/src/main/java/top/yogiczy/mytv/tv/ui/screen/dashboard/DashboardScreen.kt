@@ -27,6 +27,7 @@ import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.Icon
+import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import kotlinx.coroutines.launch
 import top.yogiczy.mytv.core.data.entities.channel.Channel
@@ -71,16 +72,22 @@ fun DashboardScreen(
     AppScreen(
         modifier = modifier,
         header = {
-            DashboardScreeIptvSource(
-                currentIptvSourceProvider = currentIptvSourceProvider,
-                toSettingsIptvSourceScreen = toSettingsIptvSourceScreen,
-                clearCurrentIptvSourceCache = {
-                    coroutineScope.launch {
-                        IptvRepository(Configs.iptvSourceCurrent).clearCache()
-                        onReload()
-                    }
-                },
-            )
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text("小骏TV", style = MaterialTheme.typography.titleLarge)
+                DashboardScreeIptvSource(
+                    currentIptvSourceProvider = currentIptvSourceProvider,
+                    toSettingsIptvSourceScreen = toSettingsIptvSourceScreen,
+                    clearCurrentIptvSourceCache = {
+                        coroutineScope.launch {
+                            IptvRepository(Configs.iptvSourceCurrent).clearCache()
+                            onReload()
+                        }
+                    },
+                )
+            }
         },
         headerExtra = { DashboardTime() },
         onBackPressed = onBackPressed,

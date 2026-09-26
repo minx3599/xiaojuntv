@@ -39,7 +39,7 @@ fun LazyRow(
     content: LazyListScope.(LazyListRuntime) -> Unit,
 ) {
     val coroutineScope = rememberCoroutineScope()
-    val firstItemFocusRequester = remember { FocusRequester() }
+    val firstItemFocusRequester = initialFocusRequester ?: remember { FocusRequester() }
     val lastItemFocusRequester = remember { FocusRequester() }
     var isFirstItemFocused by remember { mutableStateOf(false) }
 
